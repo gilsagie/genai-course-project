@@ -35,40 +35,43 @@ def get_earliest_time(when=None, now=None):
 def closest_dates(when=None, now=None, position=None):
     earliest = get_earliest_time(when, now)
     earliest_text = earliest.strftime("%Y-%m-%d %H:%M:%S")
-    is_mac = platform.system() == "Darwin"
-    if is_mac:
-        import pymssql
-        from dotenv import load_dotenv
-        load_dotenv()
-        conn = pymssql.connect(
-            server="127.0.0.1", port=1433, user="sa",
-            password=os.getenv("MSSQL_SA_PASSWORD"), database="Tech", autocommit=True,
-        )
-        mark = "%s"
-    elif platform.system() == "Windows":
-        import pyodbc
-        drivers = [d for d in pyodbc.drivers() if "SQL Server" in d]
-        driver = drivers[-1] if drivers else "SQL Server"
-        conn = pyodbc.connect(
-            f"DRIVER={{{driver}}};SERVER=localhost\\SQLEXPRESS;"
-            "DATABASE=Tech;Trusted_Connection=yes;TrustServerCertificate=yes;",
-            autocommit=True,
-        )
-        mark = "?"
-    else:
+    try:
+        system = platform.system()
+        if system == "Darwin":
+            import pymssql
+            from dotenv import load_dotenv
+            load_dotenv()
+            conn = pymssql.connect(
+                server="127.0.0.1", port=1433, user="sa",
+                password=os.getenv("MSSQL_SA_PASSWORD"), database="Tech", autocommit=True,
+            )
+            mark = "%s"
+        elif system == "Windows":
+            import pyodbc
+            drivers = [d for d in pyodbc.drivers() if "SQL Server" in d]
+            driver = drivers[-1] if drivers else "SQL Server"
+            conn = pyodbc.connect(
+                f"DRIVER={{{driver}}};SERVER=localhost\\SQLEXPRESS;"
+                "DATABASE=Tech;Trusted_Connection=yes;TrustServerCertificate=yes;",
+                autocommit=True,
+            )
+            mark = "?"
+        else:
+            return open_slots(earliest)
+        sql = f"""
+            SELECT TOP 3 [date], [time]
+            FROM dbo.Schedule
+            WHERE position = {mark}
+              AND available = 1
+              AND DATEADD(day, DATEDIFF(day, 0, [date]), CAST([time] AS datetime)) >= {mark}
+            ORDER BY [date], [time]
+        """
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute(sql, (POSITIONS_DICT[position], earliest_text))
+                rows = cursor.fetchall()
+    except Exception:
         return open_slots(earliest)
-    sql = f"""
-        SELECT TOP 3 [date], [time]
-        FROM dbo.Schedule
-        WHERE position = {mark}
-          AND available = 1
-          AND DATEADD(day, DATEDIFF(day, 0, [date]), CAST([time] AS datetime)) >= {mark}
-        ORDER BY [date], [time]
-    """
-    with conn:
-        with conn.cursor() as cursor:
-            cursor.execute(sql, (POSITIONS_DICT[position], earliest_text))
-            rows = cursor.fetchall()
     slots = []
     for row in rows:
         slots.append(str(row[0])[:10] + " " + str(row[1])[:5])
