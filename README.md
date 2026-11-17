@@ -54,7 +54,7 @@
 - [x] Three interview slots from the SQL calendar
 - [x] Info answers from the text of that job
 - [x] Chroma lookup on Info Needed
-- [ ] Streamlit Community Cloud
+- [x] Streamlit Community Cloud
 
 ---
 <br></br>
@@ -73,7 +73,7 @@
 
 ```bash
 git clone https://github.com/gilsagie/genai-course-project.git
-cd your-repo
+cd genai-course-project
 cp .env.example .env
 ```
 
@@ -92,7 +92,8 @@ python setup.py
 
 On a Mac, leave the tech-sql container running. The chat connects to it when it looks up interview times.
 
-Interview times need the SQL Server that `python setup.py` starts. Streamlit Community Cloud does not start that container. The public URL is the chat page. Scheduling works in the local setup.
+Interview times need the SQL Server that `python setup.py` starts. Streamlit Community Cloud does not start that container. The public URL is the chat page. Public chat: https://recruiter-chat.streamlit.app
+Scheduling works in the local setup.
 
 start the chat:
 ```bash
