@@ -1,5 +1,7 @@
 import os
+import shutil
 import sys
+import tempfile
 import chromadb
 APP_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if APP_DIR not in sys.path:
@@ -18,9 +20,11 @@ COLLECTION_NAME = "job_descriptions"
 
 
 def get_chroma_client(persist_directory):
-    persist_dir = get_path(persist_directory, DEFAULT_CHROMA_PERSIST_DIR)
-    os.makedirs(persist_dir, exist_ok=True)
-    return chromadb.PersistentClient(path=str(persist_dir))
+    source = get_path(persist_directory, DEFAULT_CHROMA_PERSIST_DIR)
+    persist_dir = os.path.join(tempfile.gettempdir(), "chroma_job_description")
+    if not os.path.isdir(persist_dir):
+        shutil.copytree(source, persist_dir)
+    return chromadb.PersistentClient(path=persist_dir)
 
 def _embedding_function():
     from dotenv import load_dotenv
