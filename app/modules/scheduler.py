@@ -7,6 +7,18 @@ DB_NOW = "2024-04-16 10:00:00"
 # Need to make sure these are the same as the positions in the database
 POSITIONS_DICT = {"Python Developer": "Python Dev", "SQL Developer": "Sql Dev", "Data Analyst": "Analyst", "Machine Learning Engineer": "ML"}
 
+# When running in streamlit online there is no sql database to pull data from so we use this.
+def open_slots(earliest):
+    slots = []
+    cursor = earliest.replace(minute=0, second=0, microsecond=0)
+    if cursor < earliest:
+        cursor = cursor + timedelta(hours=1)
+    while len(slots) < 3:
+        if cursor.weekday() not in (0, 5) and 9 <= cursor.hour <= 17:
+            slots.append(cursor.strftime("%Y-%m-%d %H:%M"))
+        cursor = cursor + timedelta(hours=1)
+    return slots
+
 def get_earliest_time(when=None, now=None):
     if now == None or now == "":
         now = when
@@ -33,7 +45,7 @@ def closest_dates(when=None, now=None, position=None):
             password=os.getenv("MSSQL_SA_PASSWORD"), database="Tech", autocommit=True,
         )
         mark = "%s"
-    else:
+    elif platform.system() == "Windows":
         import pyodbc
         drivers = [d for d in pyodbc.drivers() if "SQL Server" in d]
         driver = drivers[-1] if drivers else "SQL Server"
@@ -43,6 +55,8 @@ def closest_dates(when=None, now=None, position=None):
             autocommit=True,
         )
         mark = "?"
+    else:
+        return open_slots(earliest)
     sql = f"""
         SELECT TOP 3 [date], [time]
         FROM dbo.Schedule
